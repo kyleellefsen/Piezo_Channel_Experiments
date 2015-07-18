@@ -5,7 +5,7 @@ UPDATED JULY 18, 2015
 
 Created on Mon Jun 15 10:58:06 2015
 
-Run this file in spyder, after launching Flika.  Change the file names of the points_file and the force_file.  
+Run this file in spyder, after launching Flika.  Change the file names of the directory, points_file, force_file, and mask_file.  
 
 @author: Kyle Ellefsen
 """
@@ -18,6 +18,41 @@ import os
 from skimage.draw import polygon
 import random
 import pyqtgraph as pg
+
+
+
+
+''' This is the part that needs to be edited every time '''
+directory=   r'E:\Data\Adrija_analysis\Results\2015_05_27_#1\19_2015_05_27_#1'
+points_file= os.path.join(directory,'19_2015-05-27 NSCs C1 - 1in75syn dmemF12 10pctFBS_18_points4.txt')
+force_file = os.path.join(directory,'18_2015-05-27 NSCs C1 - 1in75syn dmemF12 10pctFBS_17_analyzed16.tif')
+mask_file  = os.path.join(directory,'19_2015-05-27_mask.tif') #Mask file is required for simulating points inside the cell and for determining the mean force value inside the cell.
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+#############     DON'T EDIT BELOW THIS POINT   ###############################
+###############################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
 if os.environ['COMPUTERNAME']=='KE-PARKER-2014':
     os.chdir(r'C:\Users\Kyle Ellefsen\Documents\GitHub\Flika')
 else:
@@ -25,11 +60,6 @@ else:
 from FLIKA import *
 app = QApplication(sys.argv)
 initializeMainGui()
-
-directory=r'E:\Data\Adrija_analysis\Results\2015_05_22\84_2015_05_22'
-points_file=os.path.join(directory,'84_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_23_points1.txt')
-force_file =os.path.join(directory,'83_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_22_analyzed.tif')
-mask_file=   os.path.join(directory,'84_2015_05_22_mask.tif') #Mask file is required for simulating points inside the cell and for determining the mean force value inside the cell.
 open_file(force_file) # Open the image containing the force measurements
 image=g.m.currentWindow.image
 
