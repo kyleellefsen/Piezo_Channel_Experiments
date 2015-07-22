@@ -23,10 +23,10 @@ import pyqtgraph as pg
 
 
 ''' This is the part that needs to be edited every time '''
-directory=   r'E:\Data\Adrija_analysis\Results\2015_05_27_#1\19_2015_05_27_#1'
-points_file= os.path.join(directory,'19_2015-05-27 NSCs C1 - 1in75syn dmemF12 10pctFBS_18_points4.txt')
-force_file = os.path.join(directory,'18_2015-05-27 NSCs C1 - 1in75syn dmemF12 10pctFBS_17_analyzed16.tif')
-mask_file  = os.path.join(directory,'19_2015-05-27_mask.tif') #Mask file is required for simulating points inside the cell and for determining the mean force value inside the cell.
+directory=   r'E:\Data\Adrija_analysis\Results\2015_05_22\81_2015_05_22'
+points_file= os.path.join(directory,'81_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_20_Maximum_Points.txt')
+force_file = os.path.join(directory,'80_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_19_analyzed.tif')
+mask_file  = os.path.join(directory,'81_2015_05_02_22_C2_mask.tif') #Mask file is required for simulating points inside the cell and for determining the mean force value inside the cell.
 
 
 
@@ -81,6 +81,8 @@ First, we need to load the file containing points, show the points and create th
 '''
 
 pts=np.loadtxt(points_file)
+if len(pts.shape)==1:
+    pts=np.array([pts])
 for pt in pts:
     t=0
     g.m.currentWindow.scatterPoints[t].append([pt[1],pt[2]])
