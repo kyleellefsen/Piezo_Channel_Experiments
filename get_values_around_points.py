@@ -56,7 +56,7 @@ mask_file  = os.path.join(directory,'81_2015_05_02_22_C2_mask.tif') #Mask file i
 if os.environ['COMPUTERNAME']=='KE-PARKER-2014':
     os.chdir(r'C:\Users\Kyle Ellefsen\Documents\GitHub\Flika')
 else:
-    os.chdir(r'C:\Users\Medha\Dropbox\FLIKA_shared\WinPython-64bit-2.7.6.4\python-2.7.6.amd64\Lib\site-packages\flika')
+    os.chdir(r'C:\Users\Medha\Documents\GitHub\Flika')
 from FLIKA import *
 app = QApplication(sys.argv)
 initializeMainGui()
