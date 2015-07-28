@@ -23,16 +23,7 @@ import pyqtgraph as pg
 
 
 ''' This is the part that needs to be edited every time '''
-directory=   r'E:\Data\Adrija_analysis\Results\2015_05_22\81_2015_05_22'
-points_file= os.path.join(directory,'81_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_20_Maximum_Points.txt')
-force_file = os.path.join(directory,'80_2015_05_22_C2 - 1in100synHFFs with22uM ML7 after 15min_19_analyzed.tif')
-mask_file  = os.path.join(directory,'81_2015_05_02_22_C2_mask.tif') #Mask file is required for simulating points inside the cell and for determining the mean force value inside the cell.
-
-
-
-
-
-
+values_metadata_file=r'E:\Data\Adrija_analysis\Results\2015_05_22\84_2015_05_22\84_2015_05_22_C2_metadata.txt'
 
 
 
@@ -41,17 +32,17 @@ mask_file  = os.path.join(directory,'81_2015_05_02_22_C2_mask.tif') #Mask file i
 #############     DON'T EDIT BELOW THIS POINT   ###############################
 ###############################################################################
 
-
-
-
-
-
-
-
-
-
-
-
+with open(values_metadata_file, 'r') as f:
+    metadata_txt = f.read()
+meta=dict()
+for line in metadata_txt.splitlines():
+    key,value=line.split('=')
+    meta[key]=value
+directory=os.path.dirname(values_metadata_file)
+meta['points_file']=os.path.join(directory,meta['points_file'])
+meta['mask_file']=os.path.join(directory,meta['mask_file'])
+meta['force_file']=os.path.join(directory,meta['force_file'])
+meta['threshold_value']=float(meta['threshold_value'])
 
 if os.environ['COMPUTERNAME']=='KE-PARKER-2014':
     os.chdir(r'C:\Users\Kyle Ellefsen\Documents\GitHub\Flika')
@@ -60,8 +51,8 @@ else:
 from FLIKA import *
 app = QApplication(sys.argv)
 initializeMainGui()
-open_file(force_file) # Open the image containing the force measurements
-image=g.m.currentWindow.image
+open_file(meta['force_file']) # Open the image containing the force measurements
+force_image=g.m.currentWindow.image
 
 
 def radial_profile(data, center):
@@ -80,7 +71,7 @@ def radial_profile(data, center):
 First, we need to load the file containing points, show the points and create the mask we will use to get the values around each point
 '''
 
-pts=np.loadtxt(points_file)
+pts=np.loadtxt(meta['points_file'])
 if len(pts.shape)==1:
     pts=np.array([pts])
 for pt in pts:
@@ -108,20 +99,20 @@ radial_profiles=[]
 
 
 try:
-    mx,my=image.shape
+    mx,my=force_image.shape
 except ValueError: #This happens when there is more than one frame
-    mt,mx,my=image.shape
-    image=np.squeeze(image[0,:,:]) # Only use the first frame
+    mt,mx,my=force_image.shape
+    force_image=np.squeeze(force_image[0,:,:]) # Only use the first frame
     
 
 
-Window(image)
+Window(force_image)
 gaussian_blur(2)
-threshold(30300) #I came up with this number by looking at it... I don't think there is an emperical (good) way to do this.  Hopefully the values are the same across all the force maps.
+threshold(meta['threshold_value']) 
 #load_roi(roi_file)
 #set_value(1,0,0,restrictToOutside=True) #Set everything outside the cell to a value of 1
 distances=distance_transform_edt(g.m.currentWindow.image)
-
+Window(distances)
 '''
 Loop through every point, find the corresponding location in the force measurement image, cut out a circle around that point, and get all the values in that circle
 '''
@@ -153,18 +144,18 @@ for i in np.arange(len(pts)):
         if crop<0:
            mask2=mask2[:,:crop]
         yf=my
-    cutout_image=image[x0:xf,y0:yf]
+    cutout_image=force_image[x0:xf,y0:yf]
     values=cutout_image[np.where(mask2)]
     df['values_mean'][i]=np.mean(values)
     df['Number of Values'][i]=len(values)
     df['values_std'][i]=np.std(values)
     df['Minimum value'][i]=np.min(values)
     df['Distance to nearest dark region'][i]=distances[x,y]
-    radial_profiles.append(radial_profile(image[:,10:240],pts[i,1:]-[0,10])) #cut out the top and bottom pixels which are too high and too low
+    radial_profiles.append(radial_profile(force_image[:,10:240],pts[i,1:]-[0,10])) #cut out the top and bottom pixels which are too high and too low
     
     
 '''Now let's simulate random points located inside our cell outline and compute values for those.'''
-open_file(mask_file)
+open_file(meta['mask_file'])
 g.m.currentWindow.image[:,:10]=0
 g.m.currentWindow.image[:,250:]=0
 
@@ -176,8 +167,9 @@ min_val=[]
 dist_to_dark=[]
 for i in np.arange(10000):  #Simulate 10000 points
     ii=random.randint(0,len(xx))
-    x=xx[i]
-    y=yy[i]
+    x=xx[ii]
+    y=yy[ii]
+    #g.m.currentWindow.scatterPlot.addPoints(pos=[[x,y]], brush=pg.mkBrush('r'))
     x0=x-radius
     xf=x+radius+1
     y0=y-radius
@@ -202,7 +194,7 @@ for i in np.arange(10000):  #Simulate 10000 points
         if crop<0:
            mask2=mask2[:,:crop]
         yf=my
-    cutout_image=image[x0:xf,y0:yf]
+    cutout_image=force_image[x0:xf,y0:yf]
     values=cutout_image[np.where(mask2)]
     values_mean.append(np.mean(values))
     values_std.append(np.std(values))
@@ -213,7 +205,7 @@ df['Simulated mean of mean values']=np.mean(values_mean)
 df['Simulated mean of std of mean values']=np.mean(values_std)
 df['Simulated mean of minimum values'] = np.mean(min_val)
 df['Simulated mean of distances to nearest dark region'] = np.mean(dist_to_dark)
-df['Mean value inside cell mask'] = np.mean(image[pts_inside])
+df['Mean value inside cell mask'] = np.mean(force_image[pts_inside])
 
 df2=pd.DataFrame(index=np.arange(200)) #this will store all the radial profiles, up to 200 pixels away
 for i in np.arange(len(pts)):
@@ -228,7 +220,7 @@ p.plot(len(profile)*[df['Mean value inside cell mask'][0]],pen=pg.mkPen('y'))
 '''
 Finally, we can save the results in an Excel file.
 '''
-o_filename=os.path.splitext(force_file)[0]+'.xlsx'
+o_filename=os.path.splitext(meta['force_file'])[0]+'.xlsx'
 writer=pd.ExcelWriter(o_filename)
 df.to_excel(writer,'Force Data')
 df2.to_excel(writer,'Radial Profiles')
