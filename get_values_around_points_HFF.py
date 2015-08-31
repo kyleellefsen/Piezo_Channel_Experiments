@@ -18,21 +18,27 @@ from skimage.draw import polygon
 import random
 import pyqtgraph as pg
 import sys
-
+import bz2
+import matplotlib.pylab as plt
 
 
 
 ''' This is the part that needs to be edited every time '''
 directories=[
-          r'E:\Data\Adrija_analysis\Results\2015_05_27_#1_NSC\19_2015_05_27_#1_NSC\19_2015_05_27_C1_Max_metadata.txt',
-          r'E:\Data\Adrija_analysis\Results\2015_05_27_#1_NSC\44_2015_05_27_#1_NSC\42_2015_05_27_C1_Max_metadata.txt',      
-          r'E:\Data\Adrija_analysis\Results\2015_05_28_NSC_MB231\12_2015_05_28_#1_NSC\12_2015_05_28_C3_Max_metadata.txt',
-          r'E:\Data\Adrija_analysis\Results\2015_05_28_NSC_MB231\16_2015_05_28_#1_NSC\16_2015_05_28_C3_Max_metadata.txt',
-          r'E:\Data\Adrija_analysis\Results\2015_05_28_NSC_MB231\19_2015_05_28_#1_NSC\19_2015_05_28_C3_Max_metadata.txt',
-          r'E:\Data\Adrija_analysis\Results\2015_05_28_NSC_MB231\28_2015_05_28_NSC\28_2015_05_28_C3_Max_metadata.txt',
-          r'E:\Data\Adrija_analysis\Results\2015_05_28_NSC_MB231\62_2015_05_28_#1_NSC\62_2015_05_28_C3_metadata.txt']
-
-
+          r'E:\Data\Force_analysis\Flika\11_2015_05_22_HFF',     
+          r'E:\Data\Force_analysis\Flika\14_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\17_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\19_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\22_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\27_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\29_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\31_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\33_2015_05_22_HFF',
+          r'E:\Data\Force_analysis\Flika\36_2015_05_22_HFF', 
+          ]
+          
+directory=directories[5]
+        
 
 ###############################################################################
 #############     DON'T EDIT BELOW THIS POINT   ###############################
@@ -44,8 +50,7 @@ meta=dict()
 for line in metadata_txt.splitlines():
     key,value=line.split('=')
     meta[key]=value'''
-directory=directories[0]
-meta=dict() 
+meta=dict()
 basename=os.path.basename(directory)
 meta['points_file']=os.path.join(directory,basename+'_flika_pts.txt')
 meta['mask_file']=os.path.join(directory,basename+'_Mask.tif')
@@ -82,9 +87,14 @@ def radial_profile(data, center):
 ''' 
 First, we need to load the file containing points, show the points and create the mask we will use to get the values around each point
 '''
+pts=None
 if os.path.isfile(meta['points_file']): #load the points if they exist
     pts=np.loadtxt(meta['points_file'])
-else:
+    if pts.shape[1]==3:
+        print("You are using an old points file that is missing amplitude info.")
+        os.remove(meta['points_file'])
+        pts=None
+if pts is None:
     if  os.path.isfile(meta['flika_file']): #if the points file doesn't exist, load the flika file and create the points file
         print('Found persistentInfo file.  Extracting points')
         with bz2.BZ2File(meta['flika_file'], 'rb') as f:
@@ -93,19 +103,31 @@ else:
     for puff in persistentInfo.puffs.values():
         if puff['trashed']==False:
             k=puff['kinetics']
-            pts.append(np.array([k['t_peak'], k['x'], k['y']]))
+            pts.append(np.array([k['t_peak'], k['x'], k['y'],k['amplitude']]))
     pts=np.array(pts)
     np.savetxt(meta['points_file'],pts)
 
 #
-if len(pts.shape)==1:
+if pts.shape[0]==1:
     pts=np.array([pts])
 for pt in pts:
-    t=0
-    g.m.currentWindow.scatterPoints[t].append([pt[1],pt[2]])
-g.m.currentWindow.scatterPlot.setPoints(pos=g.m.currentWindow.scatterPoints[t])
+    g.m.currentWindow.scatterPoints[0].append([pt[1],pt[2]])
+    
+scat=g.m.currentWindow.scatterPlot
+maxValue=2
+colors=plt.cm.jet(pts[:,3]/maxValue)*255
+brushes=[pg.mkBrush(colors[i,:3]) for i in np.arange(pts.shape[0])]
+scat.setPoints(pos=pts[:,1:3],brush=brushes)
 radius=5 # radius in pixels
 mask=disk(radius=radius)
+
+
+
+
+
+
+
+
 
 
 '''
@@ -144,7 +166,7 @@ Window(distances)
 Loop through every point, find the corresponding location in the force measurement image, cut out a circle around that point, and get all the values in that circle
 '''
 for i in np.arange(len(pts)):
-    t,x,y=pts[i,:]
+    t,x,y,amp=pts[i,:]
     x=int(np.round(x))
     y=int(np.round(y))
     x0=x-radius
@@ -178,61 +200,65 @@ for i in np.arange(len(pts)):
     df['values_std'][i]=np.std(values)
     df['Minimum value'][i]=np.min(values)
     df['Distance to nearest dark region'][i]=distances[x,y]
-    radial_profiles.append(radial_profile(force_image[:,10:240],pts[i,1:]-[0,10])) #cut out the top and bottom pixels which are too high and too low
+    radial_profiles.append(radial_profile(force_image[:,10:240],pts[i,1:3]-[0,10])) #cut out the top and bottom pixels which are too high and too low
     
     
 '''Now let's simulate random points located inside our cell outline and compute values for those.'''
-open_file(meta['mask_file'])
-g.m.currentWindow.image[:,:10]=0
-g.m.currentWindow.image[:,250:]=0
+if os.path.isfile(meta['mask_file']):
+    open_file(meta['mask_file'])
+    g.m.currentWindow.image[:,:10]=0
+    g.m.currentWindow.image[:,250:]=0
+    
+    pts_inside=np.where(g.m.currentWindow.image)
+    xx,yy=pts_inside
+    values_mean=[]
+    values_std=[]
+    min_val=[]
+    dist_to_dark=[]
+    for i in np.arange(10000):  #Simulate 10000 points
+        ii=random.randint(0,len(xx)-1)
+        x=xx[ii]
+        y=yy[ii]
+        #g.m.currentWindow.scatterPlot.addPoints(pos=[[x,y]], brush=pg.mkBrush('r'))
+        x0=x-radius
+        xf=x+radius+1
+        y0=y-radius
+        yf=y+radius+1
+        mask2=np.copy(mask)
+        center2=[radius,radius]
+        if x0<0:
+            mask2=mask2[center2[0]-x:,:]
+            center2[0]=x
+            x0=0
+        elif xf>mx:
+            crop=-(xf-mx)
+            if crop<0:
+               mask2=mask2[:crop,:]
+            xf=mx
+        if y0<0:
+            mask2=mask2[:,center2[1]-y:]
+            center2[1]=y
+            y0=0
+        elif yf>my:
+            crop=-(yf-my)
+            if crop<0:
+               mask2=mask2[:,:crop]
+            yf=my
+        cutout_image=force_image[x0:xf,y0:yf]
+        values=cutout_image[np.where(mask2)]
+        values_mean.append(np.mean(values))
+        values_std.append(np.std(values))
+        min_val.append(np.min(values))
+        dist_to_dark.append(distances[x,y])
+    
+    df['Simulated mean of mean values']=np.mean(values_mean)
+    df['Simulated mean of std of mean values']=np.mean(values_std)
+    df['Simulated mean of minimum values'] = np.mean(min_val)
+    df['Simulated mean of distances to nearest dark region'] = np.mean(dist_to_dark)
+    df['Mean value inside cell mask'] = np.mean(force_image[pts_inside])
 
-pts_inside=np.where(g.m.currentWindow.image)
-xx,yy=pts_inside
-values_mean=[]
-values_std=[]
-min_val=[]
-dist_to_dark=[]
-for i in np.arange(10000):  #Simulate 10000 points
-    ii=random.randint(0,len(xx)-1)
-    x=xx[ii]
-    y=yy[ii]
-    #g.m.currentWindow.scatterPlot.addPoints(pos=[[x,y]], brush=pg.mkBrush('r'))
-    x0=x-radius
-    xf=x+radius+1
-    y0=y-radius
-    yf=y+radius+1
-    mask2=np.copy(mask)
-    center2=[radius,radius]
-    if x0<0:
-        mask2=mask2[center2[0]-x:,:]
-        center2[0]=x
-        x0=0
-    elif xf>mx:
-        crop=-(xf-mx)
-        if crop<0:
-           mask2=mask2[:crop,:]
-        xf=mx
-    if y0<0:
-        mask2=mask2[:,center2[1]-y:]
-        center2[1]=y
-        y0=0
-    elif yf>my:
-        crop=-(yf-my)
-        if crop<0:
-           mask2=mask2[:,:crop]
-        yf=my
-    cutout_image=force_image[x0:xf,y0:yf]
-    values=cutout_image[np.where(mask2)]
-    values_mean.append(np.mean(values))
-    values_std.append(np.std(values))
-    min_val.append(np.min(values))
-    dist_to_dark.append(distances[x,y])
 
-df['Simulated mean of mean values']=np.mean(values_mean)
-df['Simulated mean of std of mean values']=np.mean(values_std)
-df['Simulated mean of minimum values'] = np.mean(min_val)
-df['Simulated mean of distances to nearest dark region'] = np.mean(dist_to_dark)
-df['Mean value inside cell mask'] = np.mean(force_image[pts_inside])
+
 
 df2=pd.DataFrame(index=np.arange(200)) #this will store all the radial profiles, up to 200 pixels away
 for i in np.arange(len(pts)):
@@ -242,7 +268,8 @@ for i in np.arange(len(pts)):
 p=plot()
 for i, profile in enumerate(radial_profiles):
     p.plot(profile, pen=pg.mkPen(pg.intColor(i)))
-p.plot(len(profile)*[df['Mean value inside cell mask'][0]],pen=pg.mkPen('y'))
+if os.path.isfile(meta['mask_file']):
+    p.plot(len(profile)*[df['Mean value inside cell mask'][0]],pen=pg.mkPen('y'))
     
 '''
 Finally, we can save the results in an Excel file.
