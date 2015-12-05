@@ -19,7 +19,8 @@ from FLIKA import *
 
 
 directories=[
-          E:\Data\Stanford_data_May_2015\Data\2015-05-27 Medha NSCs on new coverslip chamber 2\2015-05-27 Medha NSCs on new coverslip chamber 2_Alice\4_2015_05_27_NSCs]
+          r'E:\Data\TIRFM_Chris\2015_09_24_SC27\B_SC27_EGTA-AM\9B_SC27_2015_09_24_Yoda1\9B_SC27_2015_09_24_Yoda1.flika',
+          r'E:\Data\TIRFM_Chris\2015_09_24_SC27\B_SC27_EGTA-AM\8B_SC27_2015_09_24_EGTA-AM\8B_SC27_2015_09_24_EGTA-AM.flika']
           
           
 directory=directories[0]

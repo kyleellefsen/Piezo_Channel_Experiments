@@ -24,19 +24,9 @@ import cPickle as pickle
 
 
 
-
 ''' This is the part that needs to be edited every time '''
 directories=[
-          r'E:\Data\Force_analysis\Flika\HFF\11_2015_05_22_HFF',     
-          r'E:\Data\Force_analysis\Flika\HFF\14_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\17_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\19_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\22_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\27_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\29_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\31_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\33_2015_05_22_HFF',
-          r'E:\Data\Force_analysis\Flika\HFF\36_2015_05_22_HFF', 
+          r'E:\Data\Force_analysis\Flika\NSC\3_2015_05_28_NSC', 
           ]
           
 directory=directories[0]

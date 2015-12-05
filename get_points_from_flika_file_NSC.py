@@ -19,7 +19,8 @@ from FLIKA import *
 
 
 directories=[
-          E:\Data\Stanford_data_May_2015\Data\2015-05-27 Medha NSCs on new coverslip chamber 2\2015-05-27 Medha NSCs on new coverslip chamber 2_Alice\4_2015_05_27_NSCs]
+          r'E:\Data\Force_analysis\Flika\NSC\4_2015_05_27_NSC'
+          ]
           
           
 directory=directories[0]
@@ -30,7 +31,7 @@ meta['flika_file']=os.path.join(directory,basename+'.flika')
 
 
 if  os.path.isfile(meta['flika_file']):
-    print('Found persistentInfo file.  Extracting points')
+    print('Found .flika file.  Extracting points')
     with bz2.BZ2File(meta['flika_file'], 'rb') as f:
         persistentInfo=pickle.load(f)
 pts=[]
